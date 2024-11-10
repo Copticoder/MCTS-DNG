@@ -1,2 +1,4 @@
 # any directory that ends with the suffix: checkpoints
 *checkpoints/
+# pycache 
+__pycache__/
