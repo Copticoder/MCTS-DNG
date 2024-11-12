@@ -9,12 +9,12 @@ class UCTNode:
     def is_fully_expanded(self, action_space):
         """Check if all possible actions have been expanded."""
         return len(self.children) == action_space
-    def best_child(self, exploration_constant=1.41):
-        """Select the child with thompson sampling."""
+    def best_child(self, action_space, exploration_constant=1.41):
         best_score = -float('inf')
-        best_action = None
+        best_actions = []
 
-        for action, child in self.children.items():
+        for action in range(action_space):
+            child = self.children.get(action, UCTNode(state=self.state))
             if child.visits == 0:
                 if not exploration_constant:
                     ucb_score = -float('inf')
@@ -25,11 +25,16 @@ class UCTNode:
                 exploration = exploration_constant * np.sqrt(np.log(self.visits) / child.visits)
                 ucb_score = exploitation + exploration
 
+            # If we find a higher score, update best_score and reset best_actions
             if ucb_score > best_score:
                 best_score = ucb_score
-                best_action = action
+                best_actions = [action]
+            # If the score is equal to the current best, add to best_actions
+            elif ucb_score == best_score:
+                best_actions.append(action)
 
-        return best_action
+        # Randomly select one of the best actions
+        return np.random.choice(best_actions)
     
 
 class DNGNode(UCTNode):
