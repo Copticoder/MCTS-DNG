@@ -39,8 +39,7 @@ class RaceTrack(Env):
 
         # Get start states, choose one to be the root node
         self.start_states = np.dstack(np.where(self.track_map==STARTING))[0]
-        # pick only one of the starting state randomly
-        self.same_start = self.start_states[5]
+        self.start_state = self.start_states[np.random.choice(self.start_states.shape[0])]
         self.nS = (*self.track_map.shape, 5, 9) # observation space
         self.nA = 9 # action space
         self.state = None # Initialize state
@@ -100,7 +99,7 @@ class RaceTrack(Env):
     # reset the car to one of the starting positions
     def reset(self):
         # choose the same starting state.
-        self.state = self.same_start
+        self.state = self.start_state
         self.speed = (0, 0)
 
         if self.render_mode == 'human':
