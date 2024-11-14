@@ -11,7 +11,7 @@ class UCT_MCTS(MCTSBase):
     def run_mcts(self, node, max_horizon, terminated=False) -> float:
         if max_horizon == 0 or terminated:
             return 0
-        elif sum(node.visits.values()) == 0 or not node.is_fully_expanded(self.action_space):
+        elif sum(node.visits.values()) == 0:
             R_s_a, terminated = self.expansion(node)
             if terminated:
                 node.visits[node.last_action] += 1

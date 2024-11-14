@@ -8,8 +8,8 @@ class BaseNode(ABC):
         self.q_values = {}
         self.last_action = -1
         self.children = {}
-    def is_fully_expanded(self, action_space):
-        return len(self.visits) == action_space
+    # def is_fully_expanded(self, action_space):
+    #     return len(self.visits) == action_space
     @abstractmethod
     def best_child(self):
         pass
@@ -21,17 +21,18 @@ class UCTNode(BaseNode):
     def best_child(self, action_space, **kwargs):
         exploration_constant = kwargs.get('exploration_constant', 1.41)
         best_score = -float('inf')
+        total_visits = sum(self.visits.values())  # Total number of visits across all actions
         best_actions = []
         for action in range(action_space):
-            if sum(self.visits.values()) == 0:                
+            if self.visits.get(action,0) == 0:   
                 if exploration_constant == 0:
                     ucb_score = -float('inf')
                 else:
                     ucb_score = float('inf')
             else:
-                exploitation = self.q_values[action] / self.visits[action]
+                exploitation = self.q_values[action]
                 # sum over the self.visits values 
-                exploration = exploration_constant * np.sqrt(np.log(sum(self.visits.values())) / self.visits[action])
+                exploration = exploration_constant * np.sqrt(np.log(total_visits) / self.visits[action])
                 ucb_score = exploitation + exploration
             # If we find a higher score, update best_score and reset best_actions
             if ucb_score > best_score:

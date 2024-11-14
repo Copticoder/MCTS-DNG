@@ -12,7 +12,7 @@ class RaceTrack(Env):
 
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, track_map:str,  render_mode:str=None, render_fps:int=10, size:int=2):
+    def __init__(self, track_map:str,  render_mode:str=None, render_fps:int=10, size:int=2, env_dynamics=False):
         self.size = size
         self.metadata.update({'render_fps': render_fps})
         assert track_map in ['a', 'b']
@@ -21,7 +21,7 @@ class RaceTrack(Env):
         # Get the absolute path of the current file
         current_dir = os.path.dirname(os.path.abspath(__file__))
         filename = 'track_a.npy' if track_map == 'a' else 'track_b.npy'
-        
+        self.env_dynamics = env_dynamics
         
         # Join the current directory with the relative path to the map file
         map_file_path = os.path.join(current_dir, 'maps', filename)
@@ -109,11 +109,11 @@ class RaceTrack(Env):
 
 
     # take actions
-    def step(self, action, env_dynamics=True):
+    def step(self, action):
         # Get new acceleration and updated position
         new_state = np.copy(self.state)
         # # 90% chance to take the intended action, 10% chance to take a random action
-        if env_dynamics:
+        if self.env_dynamics:
             if np.random.rand() <= 0.1:
                 # The car fails to accelerate with 10% probability
                 action = 4
