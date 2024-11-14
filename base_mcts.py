@@ -12,6 +12,7 @@ class MCTSBase(ABC):
         self.root = self.Node(state=self.env.reset())
         self.action_space = self.env.nA
         self.discount_gamma = 0.95
+        self.s_a_s = {}
     def save_checkpoint(self, iteration):
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
@@ -25,9 +26,9 @@ class MCTSBase(ABC):
             self.run_mcts(self.root, max_horizon)
             self.env.reset()
             if num_episodes % 1000 == 0:
-                if num_episodes % 20000 == 0:
+                if num_episodes % 1000 == 0:
                     self.save_checkpoint(num_episodes)
-                print(f"Episode {num_episodes}: Root Average Value = {self.root.value / self.root.visits}, Visits = {self.root.visits}")
+                print(f"Episode {num_episodes}: Root Average Value = {sum(self.root.q_values.values())}, Visits = {sum(self.root.visits.values())}")
 
     @abstractmethod
     def run_mcts(self, node, max_horizon):
@@ -35,19 +36,27 @@ class MCTSBase(ABC):
         pass
 
     def selection(self, node):
-        action = node.best_child(self.action_space, exploration_constant=1.41)
-        state, reward, terminated, _ = self.env.step(action)
-        if action not in node.children:
-            node.children[action] = self.Node(state=state)
-        child_node = node.children[action]
+        action = node.best_child(self.action_space, exploration_constant=3)
+        next_state, reward, terminated, _ = self.env.step(action)
+        if action not in node.visits:
+            node.visits[action] = 0
+            node.q_values[action] = 0
+        node.last_action = action
+        if next_state not in node.children:
+            node.children[next_state] = self.Node(next_state)
+        child_node = node.children[next_state]
         return child_node, terminated, reward
 
     def expansion(self, node):
         # try actions that weren't tried before
-        action = np.random.choice([i for i in range(self.action_space) if i not in node.children])
+        action = np.random.choice([i for i in range(self.action_space) if i not in node.visits])
         next_state, reward, terminated, _ = self.env.step(action)
-        if action not in node.children:
-            node.children[action] = self.Node(state=next_state)
+        if action not in node.visits:
+            node.visits[action] = 0
+            node.q_values[action] = 0
+        if next_state not in node.children:
+            node.children[next_state] = self.Node(next_state)
+        node.last_action = action
         return reward, terminated
 
     def rollout(self, max_horizon):

@@ -4,11 +4,12 @@ from copy import deepcopy
 class BaseNode(ABC):
     def __init__(self, state) -> None:
         self.state = state
-        self.children = {}
         self.visits = {}
         self.q_values = {}
         self.last_action = -1
-        self.num_visits = 0
+        self.children = {}
+    def is_fully_expanded(self, action_space):
+        return len(self.visits) == action_space
     @abstractmethod
     def best_child(self):
         pass
@@ -22,7 +23,7 @@ class UCTNode(BaseNode):
         best_score = -float('inf')
         best_actions = []
         for action in range(action_space):
-            if self.num_visits == 0:                
+            if sum(self.visits.values()) == 0:                
                 if exploration_constant == 0:
                     ucb_score = -float('inf')
                 else:
@@ -30,7 +31,7 @@ class UCTNode(BaseNode):
             else:
                 exploitation = self.q_values[action] / self.visits[action]
                 # sum over the self.visits values 
-                exploration = exploration_constant * np.sqrt(np.log(self.num_visits) / self.visits[action])
+                exploration = exploration_constant * np.sqrt(np.log(sum(self.visits.values())) / self.visits[action])
                 ucb_score = exploitation + exploration
             # If we find a higher score, update best_score and reset best_actions
             if ucb_score > best_score:

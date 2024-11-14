@@ -109,7 +109,7 @@ class RaceTrack(Env):
 
 
     # take actions
-    def step(self, action, env_dynamics=False):
+    def step(self, action, env_dynamics=True):
         # Get new acceleration and updated position
         new_state = np.copy(self.state)
         # # 90% chance to take the intended action, 10% chance to take a random action
