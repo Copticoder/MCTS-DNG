@@ -1,22 +1,31 @@
 import numpy as np
-class UCTNode:
-    def __init__(self, state, parent = None) -> None:
+from abc import ABC, abstractmethod
+from copy import deepcopy
+class BaseNode(ABC):
+    def __init__(self, state) -> None:
         self.state = state
         self.children = {}
-        self.parent = parent
         self.visits = 0
         self.value = 0
     def is_fully_expanded(self, action_space):
         """Check if all possible actions have been expanded."""
         return len(self.children) == action_space
-    def best_child(self, action_space, exploration_constant=1.41):
+    @abstractmethod
+    def best_child(self):
+        pass
+
+class UCTNode(BaseNode):
+    def __init__(self, state) -> None:
+        super().__init__(state)
+
+    def best_child(self, action_space, **kwargs):
+        exploration_constant = kwargs.get('exploration_constant', 1.41)
         best_score = -float('inf')
         best_actions = []
-
         for action in range(action_space):
-            child = self.children.get(action, UCTNode(state=self.state))
+            child = self.children[action]
             if child.visits == 0:
-                if not exploration_constant:
+                if exploration_constant == 0:
                     ucb_score = -float('inf')
                 else:
                     ucb_score = float('inf')
@@ -37,27 +46,61 @@ class UCTNode:
         return np.random.choice(best_actions)
     
 
-class DNGNode(UCTNode):
-    def __init__(self, state, parent = None) -> None:
-        super().__init__(state, parent)
-        if hasattr(self, 'value'):
-            del self.value
+class DNGNode(BaseNode):
+    def __init__(self, state) -> None:
+        super().__init__(state)
         self.mu_s = 0
         self.lambda_s = 0.01
         self.alpha_s = 1
         self.beta_s = 100
-        self.rho_s_a_s = {a: np.random.dirichlet(np.ones(4)) for a in range(9)}
-    def value_sampling(self, sampling=True):
-        if sampling:
-            tao = np.random.gamma(self.alpha_s, self.beta_s)
-            mu = np.random.normal(self.mu_s, 1/(tao * self.lambda_s))
+    def value_sampling(self, child_node, sampling=True):
+        if sampling: 
+            tao = np.random.gamma(child_node.alpha_s, child_node.beta_s)
+            mu = np.random.normal(child_node.mu_s, 1/(tao * child_node.lambda_s))
             return mu
-        return self.mu_s
+        return child_node.mu_s
+    
     def q_value(self, action, sampling = True):
-        if sampling == True:
-            if action in self.rho_s_a_s:
-                return self.rho_s_a_s[action]
-            return 0
-    def best_child_thompson_sampling(self):
-        for action, child in self.children.items():
-            child.value = child.value_sampling()
+            # get the alphas for each state given action from rho 
+            alphas = [self.rho_s_a_s[action][state] for state in self.rho_s_a_s[action]]
+            reward = 0
+            # create the dirichlet distribution
+            dirichlet = np.random.dirichlet(alphas)
+            for s_bar_idx, s_bar in enumerate(self.rho_s_a_s[action]):
+                if sampling == True:
+                    # get the mixing coefficient of the next state s'
+                    w_s_bar = dirichlet[s_bar_idx]
+                    # check which s_bar in children 
+                    if s_bar not in self.children[action]:
+                        self.children[action][s_bar] = DNGNode(state = s_bar)    
+                else:
+                    # if not sampling, use the sample mean
+                    w_s_bar = alphas[s_bar_idx]/sum(alphas)
+                reward = reward + w_s_bar * self.value_sampling(self.children[action][s_bar], sampling)
+            ## TODO: Check if need to add immediate reward R_s_a and step environment.
+            return reward
+    
+    def populate_rho_s_a_s(self, starting_action, action_space, env):
+        if starting_action not in self.rho_s_a_s:
+            self.rho_s_a_s[starting_action] = {}
+            for action in range(action_space):
+                copy_env = deepcopy(env)
+                new_state, _, terminated,_ = copy_env.step(action)
+                if action not in self.children:
+                    self.children[action] = {}
+                if new_state not in self.children[action]:
+                    self.children[action][new_state] = DNGNode(state = new_state)                    
+                self.rho_s_a_s[starting_action][new_state] = 1
+                del copy_env
+        
+    def best_child(self, action_space, **kwargs):
+        env = kwargs.get('env')
+        sampling = kwargs.get('sampling', True)
+        """Sample best child using thompson sampling"""
+        action_values = []
+        for action in range(action_space):
+            self.populate_rho_s_a_s(action,action_space, env)
+            copy_env = deepcopy(env)
+            action_values.append(self.q_value(copy_env, action, sampling))
+            del copy_env
+        return np.argmax(action_values)
