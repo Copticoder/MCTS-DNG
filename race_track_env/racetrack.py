@@ -12,7 +12,7 @@ class RaceTrack(Env):
 
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, track_map:str, render_mode:str=None, render_fps:int=10, size:int=2):
+    def __init__(self, track_map:str,  render_mode:str=None, render_fps:int=10, size:int=2):
         self.size = size
         self.metadata.update({'render_fps': render_fps})
         assert track_map in ['a', 'b']
@@ -39,6 +39,8 @@ class RaceTrack(Env):
 
         # Get start states, choose one to be the root node
         self.start_states = np.dstack(np.where(self.track_map==STARTING))[0]
+        # pick only one of the starting state randomly
+        self.same_start = self.start_states[5]
         self.nS = (*self.track_map.shape, 5, 9) # observation space
         self.nA = 9 # action space
         self.state = None # Initialize state
@@ -97,10 +99,8 @@ class RaceTrack(Env):
 
     # reset the car to one of the starting positions
     def reset(self):
-        # Select start position randomly from the starting line
-        # start_idx = np.random.choice(self.start_states.shape[0])
         # choose the same starting state.
-        self.state = self.start_states[5]
+        self.state = self.same_start
         self.speed = (0, 0)
 
         if self.render_mode == 'human':
@@ -109,12 +109,14 @@ class RaceTrack(Env):
 
 
     # take actions
-    def step(self, action):
+    def step(self, action, env_dynamics=False):
         # Get new acceleration and updated position
         new_state = np.copy(self.state)
         # # 90% chance to take the intended action, 10% chance to take a random action
-        # if np.random.rand() < 0.1:
-        #     action = np.random.choice(self.nA)  # Choose a random action with 10% probability
+        if env_dynamics:
+            if np.random.rand() <= 0.1:
+                # The car fails to accelerate with 10% probability
+                action = 4
         y_act, x_act = self._action_to_acceleration[action]
         temp_y_acc = self.speed[0] + y_act
         temp_x_acc = self.speed[1] + x_act

@@ -5,11 +5,10 @@ class BaseNode(ABC):
     def __init__(self, state) -> None:
         self.state = state
         self.children = {}
-        self.visits = 0
-        self.value = 0
-    def is_fully_expanded(self, action_space):
-        """Check if all possible actions have been expanded."""
-        return len(self.children) == action_space
+        self.visits = {}
+        self.q_values = {}
+        self.last_action = -1
+        self.num_visits = 0
     @abstractmethod
     def best_child(self):
         pass
@@ -23,17 +22,16 @@ class UCTNode(BaseNode):
         best_score = -float('inf')
         best_actions = []
         for action in range(action_space):
-            child = self.children[action]
-            if child.visits == 0:
+            if self.num_visits == 0:                
                 if exploration_constant == 0:
                     ucb_score = -float('inf')
                 else:
                     ucb_score = float('inf')
             else:
-                exploitation = child.value / child.visits
-                exploration = exploration_constant * np.sqrt(np.log(self.visits) / child.visits)
+                exploitation = self.q_values[action] / self.visits[action]
+                # sum over the self.visits values 
+                exploration = exploration_constant * np.sqrt(np.log(self.num_visits) / self.visits[action])
                 ucb_score = exploitation + exploration
-
             # If we find a higher score, update best_score and reset best_actions
             if ucb_score > best_score:
                 best_score = ucb_score
@@ -41,7 +39,6 @@ class UCTNode(BaseNode):
             # If the score is equal to the current best, add to best_actions
             elif ucb_score == best_score:
                 best_actions.append(action)
-
         # Randomly select one of the best actions
         return np.random.choice(best_actions)
     
@@ -66,13 +63,13 @@ class DNGNode(BaseNode):
             reward = 0
             # create the dirichlet distribution
             dirichlet = np.random.dirichlet(alphas)
-            for s_bar_idx, s_bar in enumerate(self.rho_s_a_s[action]):
+            for s_bar_idx,s_bar in enumerate(self.rho_s_a_s[action]):
                 if sampling == True:
                     # get the mixing coefficient of the next state s'
                     w_s_bar = dirichlet[s_bar_idx]
                     # check which s_bar in children 
                     if s_bar not in self.children[action]:
-                        self.children[action][s_bar] = DNGNode(state = s_bar)    
+                        self.children[action][s_bar] = DNGNode(state = s_bar, parent = self)    
                 else:
                     # if not sampling, use the sample mean
                     w_s_bar = alphas[s_bar_idx]/sum(alphas)
