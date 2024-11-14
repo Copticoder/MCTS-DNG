@@ -61,12 +61,6 @@ class DNGNode(BaseNode):
             mu = np.random.normal(s_bar.mu_s, std_dev)
             return mu
         return s_bar.mu_s
-    # def value_sampling(self, s_bar, sampling=True):
-    #     if sampling: 
-    #         tao = np.random.gamma(s_bar.alpha_s, s_bar.beta_s)
-    #         mu = np.random.normal(s_bar.mu_s, 1/(tao * s_bar.lambda_s))
-    #         return mu
-    #     return s_bar.mu_s
     
     def q_value(self, action, discount_factor=0.95, sampling = True):            
 
