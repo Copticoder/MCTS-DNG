@@ -58,39 +58,30 @@ class RaceTrack(Env):
             8: (1, 1)
         }
 
-
-    # Get observation
-    def _get_obs(self):
-        return (*self.state, *self.speed)
-
-    # Get info, always return None in our case
-    def _get_info(self):
-        return None
-
     # Check if the race car go accross the finishing line
-    def _check_finish(self):
+    def _check_finish(self, state):
         finish_states = np.where(self.track_map == FINISHING)
         rows = finish_states[0]
         col = finish_states[1][0]
-        if self.state[0] in rows and self.state[1] >= col:
+        if state[0] in rows and state[1] >= col:
             return True
         return False
 
     # Check if the track run out of the track
-    def _check_out_track(self, next_state):
-        row, col = next_state
+    def _check_out_track(self, state):
+        row, col = state
         H, W = self.track_map.shape
         # If the car go out of the boundary 
         if row < 0 or row >= H or col < 0 or col >= W:
             return True
         # Check if the car run into the gravels
-        if self.track_map[next_state[0], next_state[1]] == 0:
+        if self.track_map[state[0], state[1]] == 0:
             return True
         
         # Check if part of the path run into gravels
-        for row_step in range(self.state[0], row, -1):
-            if self.track_map[row_step, self.state[1]] == 0: return True
-        for col_step in range(self.state[1], col, 1 if col > self.state[1] else -1):
+        for row_step in range(state[0], row, -1):
+            if self.track_map[row_step, state[1]] == 0: return True
+        for col_step in range(state[1], col, 1 if col > state[1] else -1):
             if self.track_map[row, col_step] == 0: return True
 
         return False
@@ -101,24 +92,16 @@ class RaceTrack(Env):
         # choose the same starting state.
         self.state = self.start_state
         self.speed = (0, 0)
-
         if self.render_mode == 'human':
-            self.render(self.render_mode)
-        return self._get_obs(), self._get_info()
-
-
-    # take actions
-    def step(self, action):
-        # Get new acceleration and updated position
-        new_state = np.copy(self.state)
-        # # 90% chance to take the intended action, 10% chance to take a random action
-        if self.env_dynamics:
-            if np.random.rand() <= 0.1:
-                # The car fails to accelerate with 10% probability
-                action = 4
+            self.render(self.render_mode, self.state)
+        return (*self.state, *self.speed)
+    
+    def get_next_observation(self, observation, action):
+        state, speed = observation[:2], observation[2:]
+        new_state = np.copy(state)
         y_act, x_act = self._action_to_acceleration[action]
-        temp_y_acc = self.speed[0] + y_act
-        temp_x_acc = self.speed[1] + x_act
+        temp_y_acc = speed[0] + y_act
+        temp_x_acc = speed[1] + x_act
         
         if temp_y_acc < -4: temp_y_acc = -4
         if temp_y_acc > 0: temp_y_acc = 0 # Avoid the car from going backward
@@ -127,26 +110,38 @@ class RaceTrack(Env):
         
         new_state[0] += temp_y_acc
         new_state[1] += temp_x_acc
-        
-        terminated = False
+        speed = (temp_y_acc, temp_x_acc)
+        return (*new_state, *speed)
+
+    # take actions
+    def step(self, action):
+        # take random action
+        if self.env_dynamics:
+            if np.random.rand() <= 0.1:
+                action = np.random.choice(self.nA)
+        observation = self.get_next_observation((*self.state,*self.speed), action)
+        new_state = (observation[:2])
+        speed = (observation[2:])
+        terminated = False   
+
         # check if next position crosses the finishing line
-        if self._check_finish():
+        if self._check_finish(new_state):
             terminated = True 
         # check if next postion locates in invalid places
         elif self._check_out_track(new_state):
             self.reset()
+        
         else:
             self.state = new_state
-            self.speed = (temp_y_acc, temp_x_acc)
+            self.speed = speed
 
         if self.render_mode == 'human':
-            self.render(self.render_mode)
+            self.render(self.render_mode, new_state)
         
-        return self._get_obs(), -1, terminated, self.truncated
-
+        return (*new_state, *speed), -1 , terminated, self.truncated
 
     # visualize race map
-    def render(self, mode):
+    def render(self, mode, state):
 
         if self.window is None:
             pygame.init()
@@ -184,7 +179,7 @@ class RaceTrack(Env):
                 pygame.draw.rect(self.window, color, (col * self.size, row * self.size, self.size, self.size), 1)
         
         # Draw the car
-        pygame.draw.rect(self.window, (86, 61, 227), (self.state[1] * self.size, self.state[0] * self.size, self.size, self.size), 0)
+        pygame.draw.rect(self.window, (86, 61, 227), (state[1] * self.size, state[0] * self.size, self.size, self.size), 0)
 
 
         if mode == "human":
@@ -195,22 +190,3 @@ class RaceTrack(Env):
                     pygame.quit()
                     self.truncated = True
             self.clock.tick(self.metadata['render_fps'])
-
-
-
-
-# if __name__ == '__main__':
-
-#     render_mode = 'human'
-#     # render_mode = None
-#     env = RaceTrack('b', render_mode=render_mode, size=20)
-#     env.reset() 
-#     total_reward = 0
-#     terminated = False
-#     truncated = False
-#     while not terminated and not truncated:
-#         action = np.random.choice(env.nA)
-#         observation, reward, terminated, truncated = env.step(action)
-        
-#         total_reward += reward
-#         if terminated: print(observation, reward, terminated, total_reward)

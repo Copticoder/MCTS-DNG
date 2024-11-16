@@ -8,16 +8,17 @@ class MCTSBase(ABC):
         self.max_episodes = max_episodes
         self.env = env
         self.Node = Node
-        self.root = self.Node(state=self.env.reset())
+        self.root = self.Node(observation=self.env.reset())
         self.action_space = self.env.nA
         self.discount_gamma = 0.95
+
     def save_checkpoint(self, iteration):
-        if not os.path.exists(self.checkpoint_dir):
-            os.makedirs(self.checkpoint_dir)
-        filename = os.path.join(self.checkpoint_dir, f"checkpoint_{iteration}.pkl")
-        with open(filename, "wb") as f:
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        checkpoint_file_name = os.path.join(self.checkpoint_dir, f"checkpoint_{iteration}.pkl")
+        with open(checkpoint_file_name, "wb") as f:
             pickle.dump(self.root, f)
-        print(f"Checkpoint saved: {filename}")
+        print(f"Checkpoint saved: {checkpoint_file_name}")
+
     def online_planning(self):
         max_horizon = 100
         for num_episodes in range(1,self.max_episodes + 1):
@@ -45,7 +46,7 @@ class MCTSBase(ABC):
         if max_horizon == 0:
             return 0
         action = np.random.randint(0, self.action_space)
-        _, reward, terminated, _ = self.env.step(action)
+        observation, reward, terminated, _ = self.env.step(action)
         if terminated:
-            return 0
+            return reward
         return reward+self.discount_gamma*self.rollout(max_horizon-1)
