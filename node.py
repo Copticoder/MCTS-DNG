@@ -10,36 +10,6 @@ class BaseNode(ABC):
     @abstractmethod
     def best_child(self):
         pass
-
-class UCTNode(BaseNode):
-    def __init__(self, observation) -> None:
-        super().__init__(observation)
-
-    def best_child(self, action_space, **kwargs):
-        exploration_constant = kwargs.get('exploration_constant', 1.41)
-        best_score = -float('inf')
-        total_visits = sum(self.visits.values())  # Total number of visits across all actions
-        best_actions = []
-        for action in range(action_space):
-            if self.visits.get(action,0) == 0:   
-                if exploration_constant == 0:
-                    ucb_score = -float('inf')
-                else:
-                    ucb_score = float('inf')
-            else:
-                exploitation = self.q_values[action]
-                # sum over the self.visits values 
-                exploration = -(self.q_values[action]) * np.sqrt(np.log(total_visits) / self.visits[action])
-                ucb_score = exploitation + exploration
-            # If we find a higher score, update best_score and reset best_actions
-            if ucb_score > best_score:
-                best_score = ucb_score
-                best_actions = [action]
-            # If the score is equal to the current best, add to best_actions
-            elif ucb_score == best_score:
-                best_actions.append(action)
-        # Randomly select one of the best actions
-        return np.random.choice(best_actions)
     
 
 class DNGNode(BaseNode):
@@ -60,7 +30,10 @@ class DNGNode(BaseNode):
             return mu
         return s_bar.mu_s
     
-    def q_value(self, action, discount_factor=0.95, sampling = True):            
+    def q_value(self, action, discount_factor=0.95, sampling = True):   
+        if action not in self.rho_a_s:
+            self.rho_a_s[action] = {}
+                     
         # get the alphas for each observation given action from rho 
         rhos = [rho+1 for rho in self.rho_a_s[action].values()]
         reward = 0

@@ -1,5 +1,5 @@
 from base_mcts import MCTSBase
-from state_node import DNGNode
+from node import DNGNode
 import numpy as np
 class DNG_MCTS(MCTSBase):
     def __init__(self, env, max_episodes, checkpoint_dir) -> None:
@@ -36,7 +36,6 @@ class DNG_MCTS(MCTSBase):
         for step in range(max_horizon):
             try:
                 action = node.best_child(self.action_space, exploration_constant=0, sampling = False)
-                print(action)
                 next_observation, reward, terminated, _ = self.env.step(action)
                 total_reward += reward
                 if terminated:

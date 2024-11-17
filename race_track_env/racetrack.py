@@ -14,6 +14,7 @@ class RaceTrack(Env):
 
     def __init__(self, track_map:str,  render_mode:str=None, render_fps:int=10, size:int=2, env_dynamics=False):
         self.size = size
+        self.env_name = track_map
         self.metadata.update({'render_fps': render_fps})
         assert track_map in ['a', 'b']
         assert render_mode is None or render_mode in self.metadata['render_modes']
@@ -115,7 +116,7 @@ class RaceTrack(Env):
 
     # take actions
     def step(self, action):
-        # take random action
+        # take random action in case environment dynamics is enabled
         if self.env_dynamics:
             if np.random.rand() <= 0.1:
                 action = np.random.choice(self.nA)
@@ -130,7 +131,6 @@ class RaceTrack(Env):
         # check if next postion locates in invalid places
         elif self._check_out_track(new_state):
             self.reset()
-        
         else:
             self.state = new_state
             self.speed = speed
@@ -180,7 +180,6 @@ class RaceTrack(Env):
         
         # Draw the car
         pygame.draw.rect(self.window, (86, 61, 227), (state[1] * self.size, state[0] * self.size, self.size, self.size), 0)
-
 
         if mode == "human":
             pygame.display.update()

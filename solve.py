@@ -1,39 +1,93 @@
-from race_track_env.racetrack import RaceTrack
-from uct_mcts import UCT_MCTS
-from dng_mcts import DNG_MCTS
+import argparse
 import pickle
-algorithm = 'dng'
-env_name = 'a'
-env_dynamics = False
-train = True
-max_episodes = int(5e5)
-env = RaceTrack(env_name, render_mode=None, size=20, render_fps=60, env_dynamics=env_dynamics)
-mcts = DNG_MCTS(env, max_episodes, f"{env_name}_{algorithm}_{'stochastic' if env_dynamics else 'nonstochastic'}_checkpoints")
-if train: 
-    # play the best actions
+from race_track_env.racetrack import RaceTrack
+from dng_mcts import DNG_MCTS
+
+
+def create_environment(env_name, env_dynamics):
+    """Initialize the RaceTrack environment."""
+    return RaceTrack(env_name, render_mode=None, size=20, render_fps=60, env_dynamics=env_dynamics)
+
+
+def initialize_mcts(env, algorithm, max_episodes):
+    """Initialize the MCTS algorithm based on the specified algorithm."""
+    checkpoint_dir = f"{env.env_name}_{algorithm}_{'stochastic' if env.env_dynamics else 'nonstochastic'}_checkpoints"
+    return DNG_MCTS(env, max_episodes, checkpoint_dir)
+
+
+def train_mcts(mcts):
+    """Train the MCTS algorithm."""
+    print("Starting training...")
     mcts.online_planning()
-else:
-    # load every checkpoint and play the best action
+    print("Training completed.")
+
+
+def evaluate_checkpoints(mcts, env, max_episodes, episode_number = 1000, step_limit=50):
+    """Evaluate MCTS checkpoints by replaying the best actions."""
+    print("Starting evaluation...")
     env.render_mode = 'human'
-    for i in range(1000, max_episodes+1,50000):
-        filename = f"{env_name}_{algorithm}_{'stochastic' if env_dynamics else 'nonstochastic'}_checkpoints/checkpoint_{i}.pkl"
-        root = pickle.load(open(filename, "rb"))
-        terminated = False
+
+    for i in range(episode_number, max_episodes + 1, 50000):
+        filename = f"{mcts.checkpoint_dir}/checkpoint_{i}.pkl"
+        try:
+            with open(filename, "rb") as f:
+                root = pickle.load(f)
+        except FileNotFoundError:
+            print(f"Checkpoint file not found: {filename}")
+            continue
+
         node = root
         env.start_state = (node.observation[0], node.observation[1])
         total_rewards = 0
-        for step in range(50):
+        terminated = False
+
+        for step in range(step_limit):
             try:
-                action = node.best_child(mcts.action_space,exploration_constant=0, sampling = False)
-                print(action)
-                next_observation, reward, terminated, truncated = env.step(action)
+                action = node.best_child(mcts.action_space, exploration_constant=0, sampling=False)
+                print(f"Step {step}, Action: {action}")
+
+                next_observation, reward, terminated, _ = env.step(action)
                 total_rewards += reward
+
                 if terminated:
+                    print(f"Episode terminated after {step + 1} steps.")
                     break
-                node = node.children[next_observation]
+
+                node = node.children.get(next_observation)
+                if node is None:
+                    print("Node for next observation not found.")
+                    break
+
             except Exception as e:
-                print(e)
+                print(f"Error during evaluation: {e}")
                 break
-                
+
         env.reset()
-        print(f"finished checkpoint: {i}, Total Rewards: ", total_rewards, "Terminated: ", terminated)
+        print(f"Finished checkpoint: {i}, Total Rewards: {total_rewards}, Terminated: {terminated}")
+
+    print("Evaluation completed.")
+
+
+def main(args):
+    # Initialize environment and MCTS
+    env = create_environment(args.env_name, args.env_dynamics)
+    mcts = initialize_mcts(env , args.algorithm, args.max_episodes)
+
+    # Train or evaluate based on user input
+    if args.train:
+        train_mcts(mcts)
+    else:
+        evaluate_checkpoints(mcts, env, args.max_episodes, args.episode_number)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="MCTS for RaceTrack Environment")
+    parser.add_argument("--algorithm", type=str, default="dng", choices=["dng"], help="Algorithm to use (dng)")
+    parser.add_argument("--env_name", type=str, default="a", help="Environment name")
+    parser.add_argument("--env_dynamics", action="store_true", help="Enable stochastic environment dynamics")
+    parser.add_argument("--train", action="store_true", help="Enable training mode")
+    parser.add_argument("--max_episodes", type=int, default=int(5e5), help="Maximum number of episodes")
+    parser.add_argument("--eval_episode_number", type=int, default=50, help="Number of episodes to evaluate")
+    args = parser.parse_args()
+ 
+    main(args)
