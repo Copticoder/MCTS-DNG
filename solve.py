@@ -2,7 +2,7 @@ import argparse
 import pickle
 from race_track_env.racetrack import RaceTrack
 from dng_mcts import DNG_MCTS
-
+from uct_mcts import UCT_MCTS
 
 def create_environment(env_name, env_dynamics):
     """Initialize the RaceTrack environment."""
@@ -12,8 +12,12 @@ def create_environment(env_name, env_dynamics):
 def initialize_mcts(env, algorithm, max_episodes):
     """Initialize the MCTS algorithm based on the specified algorithm."""
     checkpoint_dir = f"{env.env_name}_{algorithm}_{'stochastic' if env.env_dynamics else 'nonstochastic'}_checkpoints"
-    return DNG_MCTS(env, max_episodes, checkpoint_dir)
-
+    if algorithm == "dng":
+        return DNG_MCTS(env, max_episodes, checkpoint_dir)
+    elif algorithm == "uct":
+        return UCT_MCTS(env, max_episodes, checkpoint_dir)
+    else:
+        raise ValueError(f"Invalid algorithm: {algorithm}")
 
 def train_mcts(mcts):
     """Train the MCTS algorithm."""
@@ -82,7 +86,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MCTS for RaceTrack Environment")
-    parser.add_argument("--algorithm", type=str, default="dng", choices=["dng"], help="Algorithm to use (dng)")
+    parser.add_argument("--algorithm", type=str, default="dng", choices=["dng", "uct"], help="Algorithm to use (dng)")
     parser.add_argument("--env_name", type=str, default="a", help="Environment name")
     parser.add_argument("--env_dynamics", action="store_true", help="Enable stochastic environment dynamics")
     parser.add_argument("--train", action="store_true", help="Enable training mode")
