@@ -60,7 +60,7 @@ python main.py --algorithm dng --env_name a --max_episodes 500000 --eval_episode
 
 Arguments
 
-* `--algorithm`: Algorithm to use (`dng` by default).
+* `--algorithm`: Algorithm to use whether DNG or UCT (`dng` by default).
 * `--env_name`: Name of the environment (`a` by default).
 * `--env_dynamics`: Enable stochastic environment dynamics.
 * `--train`: Run in training mode.
