@@ -31,25 +31,6 @@ class DNG_MCTS(MCTSBase):
             node.visits += 1
             return discounted_return
         
-    def test_episode(self, max_horizon):
-        total_reward = 0
-        node = self.root
-        terminated = False
-        self.env.render_mode = "human"
-        for step in range(max_horizon):
-            try:
-                action = node.best_child(self.action_space, exploration_constant=0, sampling = False)
-                next_observation, reward, terminated, _ = self.env.step(action)
-                total_reward += reward
-                if terminated:
-                    break
-                node = node.children[next_observation]
-            except Exception as e:
-                print(e)
-                break
-        self.env.render_mode = None
-        self.env.reset()
-        return total_reward, terminated
 
     def expansion(self, node):
         for action in range(self.action_space):

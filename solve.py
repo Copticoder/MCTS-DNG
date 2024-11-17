@@ -87,7 +87,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MCTS for RaceTrack Environment")
     parser.add_argument("--algorithm", type=str, default="dng", choices=["dng", "uct"], help="Algorithm to use (dng)")
-    parser.add_argument("--env_name", type=str, default="a", help="Environment name")
+    parser.add_argument("--env_name", type=str, default="b", choices=["b","a"], help="Environment name")
     parser.add_argument("--env_dynamics", action="store_true", help="Enable stochastic environment dynamics")
     parser.add_argument("--train", action="store_true", help="Enable training mode")
     parser.add_argument("--max_episodes", type=int, default=int(5e5), help="Maximum number of episodes")

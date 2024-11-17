@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 class BaseNode(ABC):
     def __init__(self, observation) -> None:
         self.observation = observation
-        self.visits = {}
-        self.q_values = {}
+        self.visits = 0
+        self.value = 0
         self.last_action = -1
         self.children = {}
     @abstractmethod
@@ -12,15 +12,17 @@ class BaseNode(ABC):
         pass
     
 class UCTNode(BaseNode):
-    def __init__(self, state) -> None:
-        super().__init__(state)
+    def __init__(self, observation) -> None:
+        super().__init__(observation)
 
     def best_child(self, action_space, **kwargs):
         exploration_constant = kwargs.get('exploration_constant', 1.41)
         best_score = -float('inf')
+        env = kwargs.get('env', None)
         best_actions = []
         for action in range(action_space):
-            child = self.children[action]
+            next_observation = env.get_next_observation(self.observation, action)
+            child = self.children.get(next_observation, self.__class__(next_observation))
             if child.visits == 0:
                 if exploration_constant == 0:
                     ucb_score = -float('inf')
@@ -50,8 +52,6 @@ class DNGNode(BaseNode):
         self.alpha_s = 1
         self.beta_s = 100
         self.rho_a_s = {}
-        self.visits = 0
-
     def value_sampling(self, s_bar, sampling=True):
         if sampling:
             tao = np.random.gamma(s_bar.alpha_s, 1 / s_bar.beta_s)

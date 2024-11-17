@@ -28,9 +28,26 @@ class MCTSBase(ABC):
                 self.save_checkpoint(num_episodes)
                 total_episode_rewards, terminated = self.test_episode(max_horizon)
                 print(f"Episode {num_episodes}: Episode Rewards = {total_episode_rewards}, Episode Terminated = {terminated}")
-    @abstractmethod
+    
     def test_episode(self, max_horizon):
-        pass
+        total_reward = 0
+        node = self.root
+        terminated = False
+        self.env.render_mode = "human"
+        for step in range(max_horizon):
+            try:
+                action = node.best_child(self.action_space, env=self.env, exploration_constant=0, sampling = False)
+                next_observation, reward, terminated, _ = self.env.step(action)
+                total_reward += reward
+                if terminated:
+                    break
+                node = node.children[next_observation]
+            except Exception as e:
+                print(e)
+                break
+        self.env.render_mode = None
+        self.env.reset()
+        return total_reward, terminated
     @abstractmethod
     def run_mcts(self, node, max_horizon):
         """Abstract method to run the specific MCTS algorithm."""
@@ -46,7 +63,7 @@ class MCTSBase(ABC):
         if max_horizon == 0:
             return 0
         action = np.random.randint(0, self.action_space)
-        observation, reward, terminated, _ = self.env.step(action)
+        _, reward, terminated, _ = self.env.step(action)
         if terminated:
             return reward
         return reward+self.discount_gamma*self.rollout(max_horizon-1)
