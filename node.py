@@ -11,7 +11,37 @@ class BaseNode(ABC):
     def best_child(self):
         pass
     
+class UCTNode(BaseNode):
+    def __init__(self, state) -> None:
+        super().__init__(state)
 
+    def best_child(self, action_space, **kwargs):
+        exploration_constant = kwargs.get('exploration_constant', 1.41)
+        best_score = -float('inf')
+        best_actions = []
+        for action in range(action_space):
+            child = self.children[action]
+            if child.visits == 0:
+                if exploration_constant == 0:
+                    ucb_score = -float('inf')
+                else:
+                    ucb_score = float('inf')
+            else:
+                exploitation = child.value / child.visits
+                exploration = exploration_constant * np.sqrt(np.log(self.visits) / child.visits)
+                ucb_score = exploitation + exploration
+
+            # If we find a higher score, update best_score and reset best_actions
+            if ucb_score > best_score:
+                best_score = ucb_score
+                best_actions = [action]
+            # If the score is equal to the current best, add to best_actions
+            elif ucb_score == best_score:
+                best_actions.append(action)
+
+        # Randomly select one of the best actions
+        return np.random.choice(best_actions)
+    
 class DNGNode(BaseNode):
     def __init__(self, observation) -> None:
         super().__init__(observation)
