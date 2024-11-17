@@ -9,13 +9,13 @@ def create_environment(env_name, env_dynamics):
     return RaceTrack(env_name, render_mode=None, size=20, render_fps=60, env_dynamics=env_dynamics)
 
 
-def initialize_mcts(env, algorithm, max_episodes):
+def initialize_mcts(env, algorithm, max_episodes, checkpoint_interval):
     """Initialize the MCTS algorithm based on the specified algorithm."""
     checkpoint_dir = f"{env.env_name}_{algorithm}_{'stochastic' if env.env_dynamics else 'nonstochastic'}_checkpoints"
     if algorithm == "dng":
-        return DNG_MCTS(env, max_episodes, checkpoint_dir)
+        return DNG_MCTS(env, max_episodes, checkpoint_dir,checkpoint_interval)
     elif algorithm == "uct":
-        return UCT_MCTS(env, max_episodes, checkpoint_dir)
+        return UCT_MCTS(env, max_episodes, checkpoint_dir,checkpoint_interval)
     else:
         raise ValueError(f"Invalid algorithm: {algorithm}")
 
@@ -75,7 +75,7 @@ def evaluate_checkpoints(mcts, env, max_episodes, episode_number = 1000, step_li
 def main(args):
     # Initialize environment and MCTS
     env = create_environment(args.env_name, args.env_dynamics)
-    mcts = initialize_mcts(env , args.algorithm, args.max_episodes)
+    mcts = initialize_mcts(env , args.algorithm, args.max_episodes, args.checkpoint_interval)
 
     # Train or evaluate based on user input
     if args.train:
@@ -90,8 +90,10 @@ if __name__ == "__main__":
     parser.add_argument("--env_name", type=str, default="b", choices=["b","a"], help="Environment name")
     parser.add_argument("--env_dynamics", action="store_true", help="Enable stochastic environment dynamics")
     parser.add_argument("--train", action="store_true", help="Enable training mode")
-    parser.add_argument("--max_episodes", type=int, default=int(5e5), help="Maximum number of episodes")
+    parser.add_argument("--max_episodes", type=int, default=int(2e5), help="Maximum number of episodes")
     parser.add_argument("--eval_episode_number", type=int, default=50, help="Number of episodes to evaluate")
+    # parameter to control checkpointing every n episdoes 
+    parser.add_argument("--checkpoint_interval", type=int, default=5000, help="Checkpoint every n episodes")
     args = parser.parse_args()
  
     main(args)

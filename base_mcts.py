@@ -3,7 +3,7 @@ import numpy as np
 import os
 import pickle
 class MCTSBase(ABC):
-    def __init__(self, env, max_episodes, checkpoint_dir, Node) -> None:
+    def __init__(self, env, max_episodes, checkpoint_dir, Node, checkpoint_interval) -> None:
         self.checkpoint_dir = checkpoint_dir
         self.max_episodes = max_episodes
         self.env = env
@@ -11,6 +11,7 @@ class MCTSBase(ABC):
         self.root = self.Node(observation=self.env.reset())
         self.action_space = self.env.nA
         self.discount_gamma = 0.95
+        self.checkpoint_interval = checkpoint_interval
 
     def save_checkpoint(self, iteration):
         os.makedirs(self.checkpoint_dir, exist_ok=True)
@@ -24,7 +25,7 @@ class MCTSBase(ABC):
         for num_episodes in range(1,self.max_episodes + 1):
             self.run_mcts(self.root, max_horizon)
             self.env.reset()
-            if num_episodes % 1000 == 0:
+            if num_episodes % self.checkpoint_interval == 0:
                 self.save_checkpoint(num_episodes)
                 total_episode_rewards, terminated = self.test_episode(max_horizon)
                 print(f"Episode {num_episodes}: Episode Rewards = {total_episode_rewards}, Episode Terminated = {terminated}")

@@ -2,8 +2,8 @@ from base_mcts import MCTSBase
 from node import UCTNode
 import numpy as np
 class UCT_MCTS(MCTSBase):
-    def __init__(self, env, max_episodes, checkpoint_dir) -> None:
-        super().__init__(env, max_episodes, checkpoint_dir, UCTNode)
+    def __init__(self, env, max_episodes, checkpoint_dir, checkpoint_interval) -> None:
+        super().__init__(env, max_episodes, checkpoint_dir, UCTNode, checkpoint_interval)
 
     def run_mcts(self, node, max_horizon, terminated=False) -> float:
         if max_horizon == 0 or terminated:

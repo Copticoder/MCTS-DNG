@@ -5,8 +5,8 @@ import numpy as np
 """Implementation for the DNG-MCTS Algorithm from the paper:
 DNG-MCTS Paper: https://proceedings.neurips.cc/paper/2013/hash/846c260d715e5b854ffad5f70a516c88-Abstract.html"""
 class DNG_MCTS(MCTSBase):
-    def __init__(self, env, max_episodes, checkpoint_dir) -> None:
-        super().__init__(env, max_episodes, checkpoint_dir, DNGNode)
+    def __init__(self, env, max_episodes, checkpoint_dir, checkpoint_interval) -> None:
+        super().__init__(env, max_episodes, checkpoint_dir, DNGNode, checkpoint_interval)
     def run_mcts(self, node, max_horizon, terminated=False) -> float:
         if max_horizon == 0 or terminated:
             return 0
