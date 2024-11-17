@@ -13,10 +13,10 @@ This repository contains an implementation of the **Dirichlet Normal Gamma Monte
 
 ## 📂 Project Structure
 
-<pre class="!overflow-visible"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950"></div></pre>
-
 .
+
 ├── base_mcts.py            # Base MCTS implementation
+
 ├── dng_mcts.py             # DNG-MCTS algorithm implementation
 ├── node.py                 # Node definition for MCTS
 ├── race_track_env/         # Custom RaceTrack environment
@@ -47,16 +47,17 @@ Ensure you have the following Python packages installed:
 
 To train the DNG-MCTS algorithm on the `RaceTrack` environment, run:
 
-```
+```bash
 python main.py --algorithm dng --env_name a --train --max_episodes 500000
 ```
 
 To evaluate the trained model using checkpoints, run:
 
-`python main.py --algorithm dng --env_name a --max_episodes 500000 --eval_episode_number 5000`
+```bash
+python main.py --algorithm dng --env_name a --max_episodes 500000 --eval_episode_number 5000
+```
 
-
-### Arguments
+Arguments
 
 * `--algorithm`: Algorithm to use (`dng` by default).
 * `--env_name`: Name of the environment (`a` by default).
