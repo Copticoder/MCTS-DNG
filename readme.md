@@ -13,16 +13,17 @@ This repository contains an implementation of the **Dirichlet Normal Gamma Monte
 
 ## 📂 Project Structure
 
+
+```plaintext
 .
-
 ├── base_mcts.py            # Base MCTS implementation
-
 ├── dng_mcts.py             # DNG-MCTS algorithm implementation
 ├── node.py                 # Node definition for MCTS
 ├── race_track_env/         # Custom RaceTrack environment
 ├── main.py                 # Main script for training and evaluation
 ├── README.md               # Project README file
 └── checkpoints/            # Directory for saving model checkpoints
+```
 
 
 ## 🚀 Getting Started
